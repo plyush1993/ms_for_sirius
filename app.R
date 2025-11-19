@@ -14,6 +14,23 @@ ui <- fluidPage(
   useShinyjs(),
   titlePanel(div("MS1/MS2 .ms File Generator for SIRIUS", style = "color: blue; font-size: 35px; font-weight: bold;")),
   
+  tags$head(tags$style(HTML("
+    .shiny-output-error-validation {
+      color: #000 !important;
+      font-size: 18px !important;
+      font-weight: 800 !important;
+      padding: 12px;
+    }
+    .highlight {
+      background-color: #FFFFFF;
+      border: 2px solid black;
+      color: black;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+  "))),
+  
   tags$head(
     tags$style(HTML("
       .nav-tabs > li > a {

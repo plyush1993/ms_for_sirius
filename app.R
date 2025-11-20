@@ -12,7 +12,17 @@ library(shinyjs)
 
 ui <- fluidPage(
   useShinyjs(),
-  titlePanel(div("MS1/MS2 .ms File Generator for SIRIUS", style = "color: blue; font-size: 35px; font-weight: bold;")),
+  div(
+    style = "
+    text-align:center;
+    color:#0066cc;
+    font-size:32px;
+    font-weight:900;
+    margin-top:10px;
+    margin-bottom:20px;
+  ",
+    "MS1/MS2 .ms File Generator for SIRIUS"
+  ),
   
   tags$head(tags$style(HTML("
     .shiny-output-error-validation {

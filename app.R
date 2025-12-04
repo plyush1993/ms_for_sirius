@@ -80,6 +80,15 @@ ui <- fluidPage(
                      "MS1 tolerance around parent mass (+/- Da):",
                      value = 10, min = 0, step = 1)
       ),
+      checkboxInput("filter_ms1_pct",
+              "Filter MS1 by relative intensity (%)",
+              value = FALSE),
+     conditionalPanel(
+              "input.filter_ms1_pct == true",
+           numericInput("ms1_pct",
+               "Keep MS1 peaks ≥ this % of max MS1 intensity:",
+               value = 1, min = 0, max = 100, step = 1)
+         ),
       
       hr(),
       h4("MS1 spectrum input"),
@@ -215,31 +224,42 @@ server <- function(input, output, session) {
     parse_spectrum(input$ms2_input_type, input$ms2_text, input$ms2_file, label = "MS2")
   })
   
-  ms1_filtered <- reactive({
-    df <- ms1_data()
+ms1_filtered <- reactive({
+  df <- ms1_data()
+  
+  if (isTRUE(input$filter_ms1)) {
+    req(input$parent_mass)
     
-    if (isTRUE(input$filter_ms1)) {
-      req(input$parent_mass)
-      
-      tol <- input$ms1_tol
-      if (is.null(tol) || is.na(tol) || tol < 0) tol <- 0
-      
-      center <- input$parent_mass
-      lower  <- max(0, center - tol)  
-      upper  <- center + tol
-      
-      df <- df[df$mz >= lower & df$mz <= upper, , drop = FALSE]
-      
-      validate(
-        need(
-          nrow(df) > 0,
-          "MS1 filtering removed all peaks. Try increasing the tolerance or disabling MS1 filtering."
-        )
-      )
-    }
+    tol <- input$ms1_tol
+    if (is.null(tol) || is.na(tol) || tol < 0) tol <- 0
     
-    df
-  })
+    center <- input$parent_mass
+    lower  <- max(0, center - tol)
+    upper  <- center + tol
+    
+    df <- df[df$mz >= lower & df$mz <= upper, , drop = FALSE]
+  }
+  
+  if (isTRUE(input$filter_ms1_pct) && nrow(df) > 0) {
+    pct <- input$ms1_pct
+    if (is.null(pct) || is.na(pct) || pct < 0) pct <- 0
+    if (pct > 100) pct <- 100
+    
+    max_int <- max(df$intensity, na.rm = TRUE)
+    thr <- max_int * pct / 100
+    
+    df <- df[df$intensity >= thr, , drop = FALSE]
+  }
+  
+  validate(
+    need(
+      nrow(df) > 0,
+      "MS1 filtering removed all peaks. Try relaxing the m/z tolerance or % intensity threshold, or disable MS1 filters."
+    )
+  )
+  
+  df
+})
   
   ms2_filtered <- reactive({
     df <- ms2_data()

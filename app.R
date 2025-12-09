@@ -9,6 +9,8 @@ library(ggplot2)
 library(shinythemes)
 library(shinyWidgets)
 library(shinyjs)
+library(Spectra)
+library(MsBackendMgf)
 
 ui <- fluidPage(
   useShinyjs(),
@@ -150,7 +152,9 @@ ui <- fluidPage(
       ),
       
       hr(),
-      downloadButton("download_ms", "Download .ms file", class = "btn-info")
+      downloadButton("download_ms", "Download .ms file", class = "btn-info"),
+     br(), br(),
+     downloadButton("download_mgf", "Download .mgf file", class = "btn-success")
     ),
     
     mainPanel(
@@ -449,8 +453,40 @@ ms1_filtered <- reactive({
     }
   )
   
+ output$download_mgf <- downloadHandler(
+    filename = function() {
+      nm <- input$compound_name
+      if (is.null(nm) || !nzchar(nm)) nm <- "compound"
+      paste0(nm, ".mgf")
+    },
+    content = function(file) {
+      df2 <- ms2_filtered()
+      
+      if (!is.data.frame(df2) || nrow(df2) == 0) {
+        stop("Cannot generate MGF: MS2 spectrum is empty after filtering.")
+      }
+      
+      sp_df <- S4Vectors::DataFrame(
+        mz              = I(list(df2$mz)),
+        intensity       = I(list(df2$intensity)),
+        precursorMz     = input$parent_mass,
+        precursorCharge = as.integer(input$charge),
+        rtime           = c(-1),       
+        msLevel         = as.integer(2),  
+        TITLE           = paste0(input$compound_name)
+      )
+      
+      sps <- Spectra::Spectra(sp_df)
+      
+      Spectra::export(
+        sps,
+        MsBackendMgf::MsBackendMgf(),
+        file = file
+      )
+    }
+  )
+  
   observe({
-    # Check MS1
     ms1_ok <- tryCatch({
       df1 <- ms1_filtered()
       nrow(df1) > 0
@@ -458,7 +494,6 @@ ms1_filtered <- reactive({
       FALSE
     })
     
-    # Check MS2
     ms2_ok <- tryCatch({
       df2 <- ms2_filtered()
       nrow(df2) > 0
@@ -466,7 +501,6 @@ ms1_filtered <- reactive({
       FALSE
     })
     
-    # Check .ms construction
     ms_ok <- tryCatch({
       ms_file_text()
       TRUE
@@ -481,6 +515,15 @@ ms1_filtered <- reactive({
     } else {
       shinyjs::disable("download_ms")
     }
+    
+    valid2 <- ms2_ok
+    
+    if (valid2) {
+      shinyjs::enable("download_mgf")
+    } else {
+      shinyjs::disable("download_mgf")
+    }
+    
   })
   
 }

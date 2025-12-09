@@ -1,4 +1,4 @@
-# ms_for_sirius
+# ms_for_sirius <img src="ms_for_sirius_logo.png" align="right" height="180" width="160">
 
 ### Description :bookmark_tabs:
 The [Shiny App](https://shiny.posit.co/) for generating an individual .ms file from user-provided MS spectra in 2 levels for one single compound. Spectra can be provided in .txt or pasted directly from the clipboard through e.g. [ElMaven](https://github.com/ElucidataInc/ElMaven). The obtained file is suitable for processing in [SIRIUS](https://bio.informatik.uni-jena.de/software/sirius/). It is also possible to filter by precursor mass and relative abundance, which provides a tidy formatting for the search query in [GNPS](https://fasst.gnps2.org/fastsearch/) and [BUDDY](https://github.com/Philipbear/BUDDY_Metabolomics). In addition, it is possible to generate .mgf (ms2 only) file for reading/searching in [NIST MS Search](https://chemdata.nist.gov/mass-spc/ms-search/), [MetaboScape](https://www.bruker.com/en/products-and-solutions/mass-spectrometry/ms-software/metaboscape.html), SIRIUS, etc. 

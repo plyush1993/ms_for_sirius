@@ -2,6 +2,7 @@
 #Sys.setenv(LANG = "en_US.UTF-8")
 #Sys.setlocale("LC_ALL", "C.UTF-8")  
 #options(encoding = "UTF-8")
+#rsconnect::deployApp()
 
 library(shiny)
 library(DT)
@@ -14,6 +15,18 @@ library(MsBackendMgf)
 
 ui <- fluidPage(
   useShinyjs(),
+  
+tags$head(tags$style(HTML("
+  .app-footer { position: fixed; left:0; right:0; bottom:0; 
+                text-align:center; font-size:12px; opacity:0.75;
+                padding:8px; background: rgba(255,255,255,0.8);
+                border-top: 1px solid #ddd; z-index: 9999; }
+  body { padding-bottom: 45px; }
+"))),
+
+div(class = "app-footer",
+    HTML("Created by: Dr. Ivan Plyushchenko ; Github: plyush1993")
+),
   
 div(
   style = "
@@ -545,5 +558,3 @@ ms1_filtered <- reactive({
 
 
 shinyApp(ui, server)
-
-#rsconnect::deployApp()

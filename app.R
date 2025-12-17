@@ -14,17 +14,32 @@ library(MsBackendMgf)
 
 ui <- fluidPage(
   useShinyjs(),
-  div(
-    style = "
-    text-align:center;
-    color:#0066cc;
-    font-size:32px;
-    font-weight:900;
-    margin-top:10px;
-    margin-bottom:20px;
+  
+div(
+  style = "
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
   ",
-    "MS1/MS2 .ms File Generator for SIRIUS"
+  
+  tags$img(
+    src = 'https://raw.githubusercontent.com/plyush1993/ms_for_sirius/main/ms_for_sirius_logo.png',
+    height = '150px',
+    style = 'margin-right: 20px;'
   ),
+  
+  div(
+    style = '
+      font-size: 32px;
+      font-weight: 900;
+      color: #0066cc;
+      text-align: center;
+    ',
+    "MS1/MS2 .ms File Generator for SIRIUS"
+  )
+),
   
   tags$head(tags$style(HTML("
     .shiny-output-error-validation {

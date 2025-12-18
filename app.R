@@ -24,8 +24,10 @@ tags$head(tags$style(HTML("
   body { padding-bottom: 45px; }
 "))),
 
-div(class = "app-footer",
-    HTML("Created by: Dr. Ivan Plyushchenko ; Github: plyush1993")
+div(
+  class = "app-footer",
+  HTML('Created by: Dr. Ivan Plyushchenko &nbsp;|&nbsp;
+       <a href="https://github.com/plyush1993/ms_for_sirius" target="_blank">GitHub repository</a>')
 ),
   
 div(

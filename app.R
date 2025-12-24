@@ -24,6 +24,12 @@ tags$head(tags$style(HTML("
   body { padding-bottom: 45px; }
 "))),
 
+tags$head(
+  tags$title("ms_for_sirius"),
+  tags$link(rel = "icon", type = "image/png",
+            href = "https://raw.githubusercontent.com/plyush1993/ms_for_sirius/main/ms_for_sirius_logo.png")
+),
+
 div(
   class = "app-footer",
   HTML('Created by: Ivan Plyushchenko &nbsp;|&nbsp;

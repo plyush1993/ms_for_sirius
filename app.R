@@ -12,6 +12,7 @@ library(shinyWidgets)
 library(shinyjs)
 library(Spectra)
 library(MsBackendMgf)
+#library(plotly)
 
 ui <- fluidPage(
   useShinyjs(),
@@ -187,13 +188,18 @@ div(
                   accept = c(".txt", ".csv", ".tsv"))
       ),
       
+     hr(),
+      h4("Reference Spectra"),
+      tags$small("Upload reference spectrum as CSV with columns 'mz' and 'intensity'."),
+      fileInput("spectra_file", "", accept = ".csv"),
+     
       hr(),
       downloadButton("download_ms", "Download .ms file", class = "btn-info"),
      br(), br(),
      downloadButton("download_mgf", "Download .mgf file", class = "btn-success")
     ),
     
-    mainPanel(
+        mainPanel(
       tabsetPanel(
         tabPanel("MS1 spectrum",
                  plotOutput("ms1_plot", height = "300px"),  
@@ -204,6 +210,20 @@ div(
                  plotOutput("ms2_plot", height = "300px"),  
                  br(), br(),  
                  DTOutput("ms2_table")
+        ),
+        tabPanel("Mirror plot",
+                 br(),
+                 radioButtons(
+                   "mirror_source", "Use MS2:",
+                   choices = c("Filtered MS2 (after filters)" = "filtered",
+                               "Raw MS2 (before filters)"     = "raw"),
+                   inline = TRUE
+                 ),
+                 tags$small(
+                   "Reference spectrum is taken from the CSV uploaded in the sidebar (columns: 'mz', 'intensity')."
+                 ),
+                 br(), br(),
+                 plotOutput("mirror_plot", height = "600px")
         ),
         tabPanel("Raw .ms text", verbatimTextOutput("preview_ms"))
       )
@@ -335,6 +355,100 @@ ms1_filtered <- reactive({
     df
   })
 
+    lib_ms2_data <- reactive({
+    validate(
+      need(input$spectra_file,
+           "Upload a reference MS2 CSV (with columns 'mz' and 'intensity') in the sidebar.")
+    )
+    
+    df <- tryCatch(
+      read.csv(input$spectra_file$datapath, stringsAsFactors = FALSE),
+      error = function(e) NULL
+    )
+    
+    validate(
+      need(!is.null(df), "Unable to read reference MS2 CSV. Check the file format."),
+      need(all(c("mz", "intensity") %in% names(df)),
+           "Reference CSV must contain columns named 'mz' and 'intensity'.")
+    )
+    
+    df <- df[, c("mz", "intensity"), drop = FALSE]
+    df$mz        <- suppressWarnings(as.numeric(df$mz))
+    df$intensity <- suppressWarnings(as.numeric(df$intensity))
+    
+    df <- df[is.finite(df$mz) & is.finite(df$intensity), , drop = FALSE]
+    validate(
+      need(nrow(df) > 0, "Reference MS2 spectrum is empty after cleaning. Check the CSV.")
+    )
+    
+    df
+  })
+
+  ms2_for_mirror <- reactive({
+    if (is.null(input$mirror_source) || input$mirror_source == "filtered") {
+      ms2_filtered()
+    } else {
+      ms2_data()
+    }
+  })
+
+  output$mirror_plot <- renderPlot({
+  df_s <- ms2_for_mirror()
+  validate(
+    need(nrow(df_s) > 0, "MS2 spectrum has no peaks to show in mirror plot.")
+  )
+  
+  df_s$mz        <- suppressWarnings(as.numeric(df_s$mz))
+  df_s$intensity <- suppressWarnings(as.numeric(df_s$intensity))
+  df_s <- df_s[is.finite(df_s$mz) & is.finite(df_s$intensity), , drop = FALSE]
+  validate(
+    need(nrow(df_s) > 0, "MS2 spectrum is empty after cleaning (NA / non-numeric values removed).")
+  )
+  
+  df_ref <- lib_ms2_data()
+  
+  max_s   <- max(df_s$intensity,   na.rm = TRUE)
+  max_ref <- max(df_ref$intensity, na.rm = TRUE)
+  
+  validate(
+    need(is.finite(max_s)   && max_s   > 0, "MS2 intensities are zero or NA."),
+    need(is.finite(max_ref) && max_ref > 0, "Reference MS2 intensities are zero or NA.")
+  )
+  
+  df_s$rel   <- 100 * df_s$intensity   / max_s
+  df_ref$rel <- 100 * df_ref$intensity / max_ref
+  
+  df_ref$rel <- -df_ref$rel
+  
+  df_s$type   <- "Sample"
+  df_ref$type <- "Reference"
+  
+  df_all <- rbind(df_s, df_ref)
+  
+  p <- ggplot(df_all, aes(x = mz, xend = mz, y = 0, yend = rel, color = type)) +
+    geom_segment(size = 0.8) +
+    scale_color_manual(
+      name   = "Spectrum",
+      values = c(
+        "Sample"   = "#104E8B",
+        "Reference" = "#8B1A1A"
+      )
+    ) +
+    scale_y_continuous(
+      "Relative intensity (%)",
+      labels = function(x) abs(x)
+    ) +
+    labs(
+      x = "m/z",
+      title = "Mirror spectrum"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      legend.position = "bottom")
+  
+  p
+})
+
   ms_file_text <- reactive({
     df1 <- ms1_filtered()
     df2 <- ms2_filtered()
@@ -366,10 +480,12 @@ ms1_filtered <- reactive({
     validate(
       need(nrow(df) > 0, "No MS1 peaks to plot.")
     )
-    ggplot(df, aes(x = mz, y = intensity)) +
+    p <- ggplot(df, aes(x = mz, y = intensity)) +
       geom_segment(aes(xend = mz, y = 0, yend = intensity)) +
       labs(x = "m/z", y = "Intensity", title = "MS1 spectrum") +
-      theme_minimal()
+      theme_minimal(base_size = 12)
+    #ggplotly(p)
+    p
   })
   
   output$ms2_plot <- renderPlot({
@@ -377,10 +493,12 @@ ms1_filtered <- reactive({
     validate(
       need(nrow(df) > 0, "No MS2 peaks to plot.")
     )
-    ggplot(df, aes(x = mz, y = intensity)) +
+    p <- ggplot(df, aes(x = mz, y = intensity)) +
       geom_segment(aes(xend = mz, y = 0, yend = intensity)) +
       labs(x = "m/z", y = "Intensity", title = "MS2 spectrum") +
-      theme_minimal()
+      theme_minimal(base_size = 12)
+    #ggplotly(p)
+    p
   })
   
   output$ms1_table <- renderDT({
